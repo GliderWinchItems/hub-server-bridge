@@ -1,0 +1,7 @@
+#hub-control
+socat TCP4-LISTEN:$1,reuseaddr,fork -
+nc localhost $1 < $2
+nc localhost $1
+echo END
+exit
+

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+HUBDIR=~/GliderWinchItems/hub-server-bridge/trunk
+echo "COMPILED WITH hub-server IN DIRECTORY: $HUBDIR"
+echo "SANDBOX EXECUTABLE NAME: $1"
+if [ "$1" = "-?" -o "$1" = "--help" ]; then
+	echo "# Usage: $ m [<sandbox_file>]"
+	exit 0
+fi
+
+if [ -z "$1" ]; then
+	echo "No sandbox file named.  We regret the inconvenience."
+	echo "Please enter file name, e.g--"
+	echo "./m sand1"
+	exit 0
+else
+	echo "# Making \"hub-server-bridge\" with sandbox file \"$1.c\""
+	echo "#  using hub-server files in: $HUBDIR"
+	if [ ! -f "$1.c" ]; then
+		echo "# Error: Can't find sandbox file \"$1.c\" and this is not good."
+		exit 1
+	fi
+	SANDBOX="$1"
+fi
+
+CANDIR=../../../../../GliderWinchCommons/embed/svn_common/trunk
+
+rm  -f hub-server
+gcc -Wall -I. -o "hub-server-bridge-$SANDBOX" \
+ $HUBDIR/hub-server.c \
+ $HUBDIR/hub-server-sock.c \
+ "$SANDBOX.c" \
+ $HUBDIR/hub-server-queue.c \
+ $HUBDIR/hub-server-util.c \
+ -pthread \
+ -I$HUBDIR -I$CANDIR \
+ -I ../../../../../GliderWinchCommons/embed/svn_discoveryf4/sw_discoveryf4/trunk/lib \
+ -L$CANDIR/PC \
+ -lcommon_all
