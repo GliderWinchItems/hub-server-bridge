@@ -44,7 +44,7 @@ void *user0; /* Filter struct pointer */
 /* Socket interface
  */
 void hs_sock_init(void);
-void hs_sock_new_connect(int newsock, int is_server);
+void hs_sock_new_connect(int newsock, int is_server, int clientflag);
 
 /* Data interface
  */

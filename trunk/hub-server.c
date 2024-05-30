@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
 
     hs_sock_init();						/* Init connect input service thread */
 
+printf("BEGIN: argc %i argv %s\n",argc, *argv);
+
 	do_cmd_line_processing(argc, argv);
 
     /* Get the address info */
@@ -117,14 +119,14 @@ int main(int argc, char *argv[])
         if (newsock < 0)
             perror("main -- accept returns < 0");
         else
-        	hs_sock_new_connect(newsock, 0);
+        	hs_sock_new_connect(newsock, 0, 0);
     }
 
     close(sock);
     return 0;
 }
 
-void connect_to_server(char *hostname, char *serviceport, int clientflag);
+void connect_to_server(char *hostname, char *serviceport, int clientflag)
 {
 	char *me = "connect_to_server";
     struct sockaddr_in serveraddr;
@@ -164,13 +166,16 @@ void connect_to_server(char *hostname, char *serviceport, int clientflag);
 
 void do_cmd_line_processing(int argc, char *argv[])
 {
-    int fcode;
 	#define	ARG_IS(string)		(strncmp(argv[0], string, strlen(string)) == 0)
 	
 	if(argc < 3) usage();
+int ct=0;
+printf("A %i: argc %i argv %s\n",ct++, argc, *argv);
 
 	for(argc -= 1, argv += 1; argc > 0 && *argv[0] == '-'; argc -= 1, argv += 1)
 	{
+printf("B %i: argc %i argv %s\n",ct++, argc, *argv);
+
 		if(ARG_IS("-?")) usage();
 		if(ARG_IS("--help")) usage();
 		
@@ -180,15 +185,23 @@ void do_cmd_line_processing(int argc, char *argv[])
 		if(ARG_IS("--dle=")) { dle = (char)strtol(argv[0]+6, NULL, 0); dle_flag = 1; continue; }
         if(ARG_IS("--file")) 
         {
-            if ((fp=fopen((argv+1),"r")) == NULL)
-                fprintf(stderr, "# --file %s failed to open\n",(argv+1));
+            if ((fp=fopen(*(argv+1),"r")) == NULL)
+            {
+                printf("# --file %s failed to open\n",*(argv+1));
                 usage();
+            }
+
+printf("C 3: --file %s open OK!\n",*(argv+1));  
+            argc -= 1; argv += 1;         
+            continue;
         }        
 	}
+printf("D %i: argc %i argv %s\n",ct++, argc, *argv);
 
 	if(argc <= 0  ||  (argc & 1) != 0)
 	{
-    	printf("# Error: <ipad>/<port> come in pairs.\n");
+printf("E %i: argc %i argv %s\n",ct++, argc, *argv);
+    	printf("# Error: <ipad>/<port> come in pairs!\n");
 		hs_exit(3);
 	}
 

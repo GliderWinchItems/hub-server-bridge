@@ -31,6 +31,8 @@ extern int dle_flag;				/* Data-link-excape char set flag */
 extern int cs_mode;					/* Client/server mode flag */
 extern int nodelay_flag;			/* Get rid of Nagle delay */
 
+extern int clientctr; /* Count of client connections (1 - n) */
+
 /* Local variables */
 
 static pthread_t connect_in_tid;
@@ -69,8 +71,8 @@ void hs_sock_init(void)			/* Called from the other thread */
 
 		if(pthread_create(&p->ot_tid, NULL, out_threads, (void *)p) != 0) 
 			hs_fatal("hs_sock_init", "Failed to create socket out thread");
-	}
-	
+
+	}	
 	hsd_init(ccb+0, HS_MAX_CONNECT);
 
 	if(pthread_create(&connect_in_tid, NULL, in_thread, NULL) != 0) 

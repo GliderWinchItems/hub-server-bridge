@@ -2,7 +2,7 @@
 
 HUBDIR=~/GliderWinchItems/hub-server-bridge/trunk
 echo "COMPILED WITH hub-server IN DIRECTORY: $HUBDIR"
-echo "SANDBOX EXECUTABLE NAME: $1"
+echo "SANDBOX EXECUTABLE NAME: hub-server-bridge-$1"
 if [ "$1" = "-?" -o "$1" = "--help" ]; then
 	echo "# Usage: $ m [<sandbox_file>]"
 	exit 0
@@ -25,15 +25,19 @@ fi
 
 CANDIR=../../../../../GliderWinchCommons/embed/svn_common/trunk
 
-rm  -f hub-server
+rm  -f hub-server-bridge-$SANDBOX
+echo "gcc NEXT"
 gcc -Wall -I. -o "hub-server-bridge-$SANDBOX" \
  $HUBDIR/hub-server.c \
  $HUBDIR/hub-server-sock.c \
  "$SANDBOX.c" \
  $HUBDIR/hub-server-queue.c \
  $HUBDIR/hub-server-util.c \
+ ../../../../bridging/PC/can-bridge-filter.c \
+ ../../../../bridging/PC/can-bridge-filter-lookup.c \
+ ../../../../bridging/PC/CANid-hex-bin.c \
  -pthread \
  -I$HUBDIR -I$CANDIR \
- -I ../../../../../GliderWinchCommons/embed/svn_discoveryf4/sw_discoveryf4/trunk/lib \
  -L$CANDIR/PC \
  -lcommon_all
+echo "gcc DONE"

@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../../../../../bridging/PC/can_bridge_filter.h"
-#include "../../../../../bridging/PC/can_bridge_filter_lookup.h"
+#include "../../../../bridging/PC/can-bridge-filter.h"
+#include "../../../../bridging/PC/can-bridge-filter-lookup.h"
 
 /* Local variables.
  */
@@ -32,17 +32,6 @@ extern FILE* fp;
 
 int hsd_init(connect_t *first_ccb, int num_ccb)
 {
-	if (oto == 0)
-	{ // One time setup of CAN bridging tables
-		oto = 1;
-		pbcf = can_bridge_filter_init(fp);
-		if (pbcf == NULL)
-		{ 
-			printf("ERR: can_bridge_filter_init failed\n")
-			exit (1);
-		}
-	}
-
 	ccb_base = first_ccb;
 	ccb_max = num_ccb;
 	return 0;
@@ -56,6 +45,16 @@ int hsd_open(connect_t *ccb)
 
 int hsd_new_in_data(connect_t *in, int size)
 {
+	if (oto == 0)
+	{ // One time setup of CAN bridging tables
+		oto = 1;
+		pcbf = can_bridge_filter_init(fp);
+		if (pcbf == NULL)
+		{ 
+			printf("ERR: can_bridge_filter_init failed\n");
+			exit (1);
+		}
+	}	
 	ccb_tmp = in;
 	int_tmp = size;
 	pinbuf = in->ptibs; // Beginning if input buffer
@@ -86,48 +85,46 @@ size is the amount buffered, and => may include more than one line <=.
 
 	if ((pin->connex_num == 0) && (pout->connex_num == 0))
 	{ // Here, both are listening port connections
-		n = hsq_enqueue_chars(pout->oq, pin->ptibs, size); // Copy all
+		n = hsq_enqueue_chars(&pout->oq, pin->ptibs, size); // Copy all
 		if(n != size)
 		{
-			syslog(LOG_INFO, "[%d/%d,%d/%d]hsd_new_in_out_pair -- enqueue S1 err, %d/%d\n",
+			syslog(LOG_INFO, "[%ld/%d,%ld/%d]hsd_new_in_out_pair -- enqueue S1 err, %d/%d\n",
 				pin-ccb_base, pin->socket, pout-ccb_base, pout->socket, n, size);
 		}
 		return n;
 	}
-	else
-	{ // Here, one or both are client port connections
-		while (size > 0)
+	// Here, one or both are client port connections
+	ct = 0;
+	while (size > 0)
+	{
+		/* Find length of one msg (one line). */
+		pchar = pinbuf;
+		while (*pchar != eol) pchar++;
+		nn = pchar - pinbuf; // Size of line
+		if (nn > 14)
 		{
-			/* Find length of one msg (one line). */
-			pchar = pinbuf;
-			while (*pchar != eol) pchar++;
-			nn = pchar - pinbuf; // Size of line
-			if (nn > 14)
-			{
-				/* Check if CAN ID (if valid,  and translated if necessary) should be copied to output. */
-				ret = can_bridge_filter_lookup(pin->ptibs, pcbf, pin->connex_num, pout->connex_num);
-				if (ret != 0)
-				{ // Copy msg (line) to output
-					n = hsq_enqueue_chars(pout->oq, pin->ptibs, nn );
-					if (n != nn)
-						syslog(LOG_INFO, "[%d/%d,%d/%d]hsd_new_in_out_pair -- enqueue S2 err, %d/%d\n",
-							pin-ccb_base, pin->socket, pout-ccb_base, pout->socket, n, size);		
-				}
+			/* Check if CAN ID (if valid,  and translated if necessary) should be copied to output. */
+			ret = can_bridge_filter_lookup((uint8_t*)pin->ptibs, pcbf, pin->connex_num, pout->connex_num);
+			if (ret != 0)
+			{ // Copy msg (line) to output
+				n = hsq_enqueue_chars(&pout->oq, pin->ptibs, nn );
+				if (n != nn)
+					syslog(LOG_INFO, "[%ld/%d,%ld/%d]hsd_new_in_out_pair -- enqueue S2 err, %d/%d\n",
+						pin-ccb_base, pin->socket, pout-ccb_base, pout->socket, n, size);		
 			}
-			else
-			{ // Here, line too short to be a CAN msg
-				n = hsq_enqueue_chars(pout->oq, pin->ptibs, nn); 
-				if(n != size)
-				{
-					syslog(LOG_INFO, "[%d/%d,%d/%d]hsd_new_in_out_pair -- enqueue S2 err, %d/%d\n",
-						pin-ccb_base, pin->socket, pout-ccb_base, pout->socket, nn, size);
-				}				
-			}
-			size -= nn;
-			pin->ptibs += nn;
 		}
-		return n;
-	}	
-	return n;
+		else
+		{ // Here, line too short to be a CAN msg
+			n = hsq_enqueue_chars(&pout->oq, pin->ptibs, nn); 
+			if(n != nn)
+			{
+				syslog(LOG_INFO, "[%ld/%d,%ld/%d]hsd_new_in_out_pair -- enqueue S3 err, %d/%d\n",
+					pin-ccb_base, pin->socket, pout-ccb_base, pout->socket, nn, size);
+			}				
+		}
+		size -= nn;
+		pin->ptibs += nn;
+		ct += nn;
+	}
+	return nn;
 }
-
