@@ -8,6 +8,8 @@
 
 #include "hub-server-util.h"
 
+#include <stdio.h>
+
 /******************************************************************************/
 
 /* Implementation
@@ -55,6 +57,7 @@ void hs_fatal(char *msg0, char *msg1)
     if(msg0 && *msg0  && msg1 && *msg1) syslog(LOG_ERR, " -- ");
     if(msg1 && *msg1) syslog(LOG_ERR, "%s", msg1);
     if(msg0 || msg1) syslog(LOG_ERR, "\n");
+printf("hs_fatal hs_exit(11): %s %s\n",msg0,msg1);
     hs_exit(11);
 }
 
@@ -79,6 +82,7 @@ int hs_recv(int sock, char* buf, int n)
 
 void hs_exit(int code)
 {
+printf("hs_exit: %i\n",code);
 	syslog(LOG_ERR, "my_exit is calling exit(%d);\n", code);
 	exit(code);
 }

@@ -23,6 +23,8 @@
 #include "hub-server-sock.h"
 #include "hub-server-queue.h"
 
+#include <stdio.h>
+
 /******************************************************************************/
 /* Externals */
 extern char eol;					/* End-of-line character */
@@ -105,7 +107,6 @@ void hs_sock_new_connect(int newsock, int is_server, int clientflag)
 			if (clientflag != 0)
 			{ // Here, client connection
 				p->connex_num = clientctr;
-				clientctr += 1;
 			}
 			else
 				p->connex_num = 0; // Listening connection
@@ -237,23 +238,42 @@ static void *in_thread(void *arg)			/* 1 of these for all connects */
 
 						LOOP(out)				/* Visit all connects */
 						{
-							if(IS_FREE(out) || IS_CLOSING(out)) continue;
+							if(IS_FREE(out) || IS_CLOSING(out)) 
+							{
+//printf("IS_FREE || IS_CLOSING\n");
+								continue;
+							}
 
 							if(cs_mode)			/* clients <==> servers */
 							{
-								if( in->is_server &&  out->is_server) continue;
-								if(!in->is_server && !out->is_server) continue;
+								if( in->is_server &&  out->is_server) 
+								{
+printf("in->is_server &&  out->is_server\n");
+									continue;
+								}
+								if(!in->is_server && !out->is_server) 
+								{
+printf("!in->is_server && !out->is_server\n");
+									continue;
+								}
 							}
 							else				/* Don't talk to ourselves */
 							{
-								if(in == out) continue;
+								if(in == out)
+								{
+printf("in == out %i socket in %i out %i\n",in->connex_num,in->socket,out->socket);
+								 continue;
+								}
 							}
 			
 							n = hsd_new_in_out_pair(in, out, size);
 							if(n < 0 || n > size)
+							{
+printf("sock.c HuH(1)? %i %i\n",n, size);
 								syslog(LOG_DEBUG, "[%ld/%d/%ld/%d]Huh(1)? %d/%d\n", 
 									in-ccb, in->socket, out-ccb, out->socket, 
 									n, size);
+							}
 
 							out->q_ok_count += n;
 							out->q_ng_count += size - n;

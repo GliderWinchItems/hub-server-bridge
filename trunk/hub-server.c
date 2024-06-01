@@ -154,7 +154,6 @@ void connect_to_server(char *hostname, char *serviceport, int clientflag)
     bcopy((char *)server->h_addr, 
 	  (char *)&serveraddr.sin_addr.s_addr, server->h_length);
     serveraddr.sin_port = htons(atoi(serviceport));
-
     /* connect: create a connection with the server */
     if (connect(sockfd,
     		(const struct sockaddr *)&serveraddr, sizeof(serveraddr)) < 0) 
@@ -211,6 +210,7 @@ printf("E %i: argc %i argv %s\n",ct++, argc, *argv);
 
     for(argc -= 2, argv += 2 ; argc >= 2; argc -= 2, argv += 2)
     { // Client connection counter will be 1 for first client
+printf("connecting to server: %s %s command line client pair: %i \n",argv[0], argv[1],clientctr);        
         connect_to_server(argv[0], argv[1], clientctr);
         clientctr += 1;
     }

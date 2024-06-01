@@ -7,6 +7,7 @@
 #include <syslog.h>
 #include "hub-server-sock.h"
 #include "hub-server-queue.h"
+#include "hub-server-util.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -45,15 +46,40 @@ int hsd_open(connect_t *ccb)
 
 int hsd_new_in_data(connect_t *in, int size)
 {
+	/* Upon first data (which means client sockets have been 
+	   connected, init bridging tables. */
 	if (oto == 0)
 	{ // One time setup of CAN bridging tables
 		oto = 1;
+		if (fp == NULL)
+		{
+			printf("ERR: bridging file pointer is NULL. Is command line --file <bridge file> missing?\n");
+			hs_exit(12);
+		}
+		/* If fp is NULL segmentation error. */
 		pcbf = can_bridge_filter_init(fp);
 		if (pcbf == NULL)
 		{ 
 			printf("ERR: can_bridge_filter_init failed\n");
 			exit (1);
 		}
+		/* The connection count has to match the bridging file.
+What happens when there has been no listening socket connection? */		
+		int ctr = 1;
+		for (int i = 0; i < ccb_max; i++)
+		{
+			if ((ccb_base+i)->connex_num !=  0)
+				ctr += 1;
+		}
+		if (pcbf->n != ctr)
+		{
+			printf("\nERR: bridge file matrix size \"N\" is %i and,\n"
+			         " it does not match hub-server connections %i\n",pcbf->n, ctr);
+			printf(  " Command line client connection count (plus one) should match bridge file size\n");
+			hs_exit(13);			
+		}
+
+
 	}	
 	ccb_tmp = in;
 	int_tmp = size;
@@ -82,9 +108,10 @@ size is the amount buffered, and => may include more than one line <=.
 	int ret;
 	int n,nn;
 	char* pchar;
-
+printf("pin->connex_num %i pout->connex_num %i size %i\n",pin->connex_num, pout->connex_num, size);
 	if ((pin->connex_num == 0) && (pout->connex_num == 0))
 	{ // Here, both are listening port connections
+printf("LtoL\n");
 		n = hsq_enqueue_chars(&pout->oq, pin->ptibs, size); // Copy all
 		if(n != size)
 		{
@@ -100,7 +127,7 @@ size is the amount buffered, and => may include more than one line <=.
 		/* Find length of one msg (one line). */
 		pchar = pinbuf;
 		while (*pchar != eol) pchar++;
-		nn = pchar - pinbuf; // Size of line
+		nn = pchar - pinbuf + 1; // Size of line
 		if (nn > 14)
 		{
 			/* Check if CAN ID (if valid,  and translated if necessary) should be copied to output. */
