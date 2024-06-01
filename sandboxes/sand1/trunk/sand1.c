@@ -144,7 +144,7 @@ printf("B: pin->connex_num %i pout->connex_num %i size %i\n",pin->connex_num, po
 			}
 		}
 		else
-		{ // Here, line too short to be a CAN msg
+		{ // Here, line too short or too long to be a CAN msg
 			n = hsq_enqueue_chars(&pout->oq, pinwk, size); 
 			if(n != nn)
 			{
@@ -152,9 +152,9 @@ printf("B: pin->connex_num %i pout->connex_num %i size %i\n",pin->connex_num, po
 					pin-ccb_base, pin->socket, pout-ccb_base, pout->socket, nn, size);
 			}				
 		}
-		size -= nn;
-		pinwk += nn;
-		ct += nn;
+		size -= n;
+		pinwk += n;
+		ct += n;
 	}
 	return nn;
 }
