@@ -39,7 +39,7 @@ int hsd_new_in_out_pair(connect_t *in, connect_t *out, int size)
 	int n = hsq_enqueue_chars(&out->oq, in->ptibs, size);
 	
 	if(n != size)
-		syslog(LOG_INFO, "[%d/%d,%d/%d]hsd_new_in_out_pair -- enqueue err, %d/%d\n",
+		syslog(LOG_INFO, "[%ld/%d,%ld/%d]hsd_new_in_out_pair -- enqueue err, %d/%d\n",
 					in-ccb_base, in->socket, out-ccb_base, out->socket, n, size);
 	return n;
 }

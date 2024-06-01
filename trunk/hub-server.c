@@ -36,7 +36,7 @@
 
 #define REVISION "rev_10 PRE-RELEASE" 	/* Update this on each revision */
 
-FILE* fp;
+FILE* fpS;
 
 void usage(void)
 {
@@ -184,7 +184,7 @@ printf("B %i: argc %i argv %s\n",ct++, argc, *argv);
 		if(ARG_IS("--dle=")) { dle = (char)strtol(argv[0]+6, NULL, 0); dle_flag = 1; continue; }
         if(ARG_IS("--file")) 
         {
-            if ((fp=fopen(*(argv+1),"r")) == NULL)
+            if ((fpS=fopen(*(argv+1),"r")) == NULL)
             {
                 printf("# --file %s failed to open\n",*(argv+1));
                 usage();

@@ -29,7 +29,7 @@ static int oto = 0;
 static char* pinbuf;
 
 extern char eol;
-extern FILE* fp;
+extern FILE* fpS;
 
 int hsd_init(connect_t *first_ccb, int num_ccb)
 {
@@ -51,13 +51,13 @@ int hsd_new_in_data(connect_t *in, int size)
 	if (oto == 0)
 	{ // One time setup of CAN bridging tables
 		oto = 1;
-		if (fp == NULL)
+		if (fpS == NULL)
 		{
 			printf("ERR: bridging file pointer is NULL. Is command line --file <bridge file> missing?\n");
 			hs_exit(12);
 		}
-		/* If fp is NULL segmentation error. */
-		pcbf = can_bridge_filter_init(fp);
+		/* If fpS is NULL segmentation error. */
+		pcbf = can_bridge_filter_init(fpS);
 		if (pcbf == NULL)
 		{ 
 			printf("ERR: can_bridge_filter_init failed\n");
@@ -70,6 +70,7 @@ What happens when there has been no listening socket connection? */
 		{
 			if ((ccb_base+i)->connex_num !=  0)
 				ctr += 1;
+printf("%2i socket %i, connex_num %i\n",i+1,(ccb_base+i)->socket,(ccb_base+i)->connex_num);
 		}
 		if (pcbf->n != ctr)
 		{
@@ -79,11 +80,10 @@ What happens when there has been no listening socket connection? */
 			hs_exit(13);			
 		}
 
-
 	}	
 	ccb_tmp = in;
 	int_tmp = size;
-	pinbuf = in->ptibs; // Beginning if input buffer
+	pinbuf = in->ptibs; // Beginning of input buffer
 	return 0;
 }
 
@@ -108,11 +108,13 @@ size is the amount buffered, and => may include more than one line <=.
 	int ret;
 	int n,nn;
 	char* pchar;
-printf("pin->connex_num %i pout->connex_num %i size %i\n",pin->connex_num, pout->connex_num, size);
+	char* pinwk = pin->ptibs; // Working pinbuf
+
+printf("A: pin->connex_num %i pout->connex_num %i size %i\n",pin->connex_num, pout->connex_num, size);
 	if ((pin->connex_num == 0) && (pout->connex_num == 0))
 	{ // Here, both are listening port connections
 printf("LtoL\n");
-		n = hsq_enqueue_chars(&pout->oq, pin->ptibs, size); // Copy all
+		n = hsq_enqueue_chars(&pout->oq, pinwk, size); // Copy all
 		if(n != size)
 		{
 			syslog(LOG_INFO, "[%ld/%d,%ld/%d]hsd_new_in_out_pair -- enqueue S1 err, %d/%d\n",
@@ -124,17 +126,18 @@ printf("LtoL\n");
 	ct = 0;
 	while (size > 0)
 	{
-		/* Find length of one msg (one line). */
-		pchar = pinbuf;
+		/* Find length of what might be(!) one CAN msg (one line). */
+		pchar = pinwk;
 		while (*pchar != eol) pchar++;
 		nn = pchar - pinbuf + 1; // Size of line
-		if (nn > 14)
-		{
+printf("B: pin->connex_num %i pout->connex_num %i size %i\n",pin->connex_num, pout->connex_num, nn);		
+		if ((nn > 14) && (nn < 32))
+		{ // Here, goldilocks: not too short, not too long
 			/* Check if CAN ID (if valid,  and translated if necessary) should be copied to output. */
-			ret = can_bridge_filter_lookup((uint8_t*)pin->ptibs, pcbf, pin->connex_num, pout->connex_num);
+			ret = can_bridge_filter_lookup((uint8_t*)pinwk, pcbf, pin->connex_num, pout->connex_num);
 			if (ret != 0)
 			{ // Copy msg (line) to output
-				n = hsq_enqueue_chars(&pout->oq, pin->ptibs, nn );
+				n = hsq_enqueue_chars(&pout->oq, pinwk, size); 
 				if (n != nn)
 					syslog(LOG_INFO, "[%ld/%d,%ld/%d]hsd_new_in_out_pair -- enqueue S2 err, %d/%d\n",
 						pin-ccb_base, pin->socket, pout-ccb_base, pout->socket, n, size);		
@@ -142,7 +145,7 @@ printf("LtoL\n");
 		}
 		else
 		{ // Here, line too short to be a CAN msg
-			n = hsq_enqueue_chars(&pout->oq, pin->ptibs, nn); 
+			n = hsq_enqueue_chars(&pout->oq, pinwk, size); 
 			if(n != nn)
 			{
 				syslog(LOG_INFO, "[%ld/%d,%ld/%d]hsd_new_in_out_pair -- enqueue S3 err, %d/%d\n",
@@ -150,7 +153,7 @@ printf("LtoL\n");
 			}				
 		}
 		size -= nn;
-		pin->ptibs += nn;
+		pinwk += nn;
 		ct += nn;
 	}
 	return nn;
