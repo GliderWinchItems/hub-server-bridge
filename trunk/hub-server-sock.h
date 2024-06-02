@@ -7,6 +7,7 @@
   extern "C" {
 #endif
 
+#include <stdio.h>
 #include "hub-server-queue.h"
 
 /******************************************************************************/
@@ -53,5 +54,6 @@ int hsd_open(connect_t *ccb);
 int hsd_new_in_data(connect_t *in, int size);
 int hsd_new_in_out_pair(connect_t *in, connect_t *out, int size);
 int hsd_close(connect_t *ccb);
+int hsd_sandbox_init(FILE* fp);
 
 #endif

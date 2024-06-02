@@ -49,3 +49,10 @@ int hsd_close(connect_t *ccb)
 	ccb_tmp = ccb;
 	return 0;
 }
+
+int hsd_sandbox_init(FILE* fp)
+{
+	if (fp != NULL)
+		printf("--file argument ignored. It is only useful when compiling for briding\n");
+	return 0;
+}

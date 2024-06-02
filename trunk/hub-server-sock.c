@@ -84,7 +84,7 @@ void hs_sock_init(void)			/* Called from the other thread */
 /* Create and populate a new connect control block.  Link it onto the front of the
  * list of connect control blocks.
  */
-void hs_sock_new_connect(int newsock, int is_server, int clientflag)
+void hs_sock_new_connect(int newsock, int is_server, int connectnum)
 {
 	connect_t *p;
 	int state = 1;
@@ -102,15 +102,7 @@ void hs_sock_new_connect(int newsock, int is_server, int clientflag)
 			p->q_ng_count = 0;
 			p->user0 = NULL;
 			p->user1 = NULL;
-
-			/* Number client connections (1-n). All listening connections are 0. */
-			if (clientflag != 0)
-			{ // Here, client connection
-				p->connex_num = clientctr;
-			}
-			else
-				p->connex_num = 0; // Listening connection
-
+			p->connex_num = connectnum;
 			
 			if(nodelay_flag)
 			{
@@ -182,6 +174,7 @@ static void *in_thread(void *arg)			/* 1 of these for all connects */
 		if (ret < 0) continue;
 		select_seqn += 1;
 
+		/* Debugging */
 		if(1==0)		
 			if(ret == 0  ||  (select_seqn % 2000) == 0)
 				syslog(LOG_DEBUG, "Idle5 %ld\n", select_seqn);

@@ -42,7 +42,7 @@ void usage(void)
 {
 	fprintf(stderr, "# hub-server %s\n", REVISION);
 #if HUB_SERVER_FILTER    
-    fprintf(stderr, "# Usage: $ hub-server [--csmode] [--nodelay] [--eol=<n>] [--dle=<n>] [--file <path/name>] <listen_ipad> <listen_port> \n");   
+    fprintf(stderr, "# Usage: $ hub-server [--csmode] [--nodelay] [--eol=<n>] [--dle=<n>] [--file=<path/name>] <listen_ipad> <listen_port> \n");   
 #else    
 	fprintf(stderr, "# Usage: $ hub-server [--csmode] [--nodelay] [--eol=<n>] [--dle=<n>] <listen_ipad> <listen_port> {<connect_host> <connect_port>}*\n");   
 #endif    
@@ -56,8 +56,6 @@ char dle = 0;						/* Data-link-escape (initially: don't care) */
 int dle_flag = 0;					/* DLE set flag (initially: false) */
 int cs_mode = 0;					/* Client/server mode flag */
 int nodelay_flag = 0;				/* Get rid of Nagle delay */
-
-int clientctr = 1; /* Client connections count. */
 
 int main(int argc, char *argv[])
 {
@@ -126,7 +124,7 @@ printf("BEGIN: argc %i argv %s\n",argc, *argv);
     return 0;
 }
 
-void connect_to_server(char *hostname, char *serviceport, int clientflag)
+void connect_to_server(char *hostname, char *serviceport, int connectnum)
 {
 	char *me = "connect_to_server";
     struct sockaddr_in serveraddr;
@@ -160,11 +158,13 @@ void connect_to_server(char *hostname, char *serviceport, int clientflag)
       hs_fatal(me, "ERROR connecting");
       
 // Non-zero clientflag conveys client connection
-    hs_sock_new_connect(sockfd, 1, clientflag);
+    hs_sock_new_connect(sockfd, 1, connectnum);
 }
 
 void do_cmd_line_processing(int argc, char *argv[])
 {
+    int clientctr = 0;
+
 	#define	ARG_IS(string)		(strncmp(argv[0], string, strlen(string)) == 0)
 	
 	if(argc < 3) usage();
@@ -182,16 +182,14 @@ printf("B %i: argc %i argv %s\n",ct++, argc, *argv);
 		if(ARG_IS("--nodelay")) { nodelay_flag = 1; continue; }
 		if(ARG_IS("--eol=")) { eol = (char)strtol(argv[0]+6, NULL, 0); continue; }		
 		if(ARG_IS("--dle=")) { dle = (char)strtol(argv[0]+6, NULL, 0); dle_flag = 1; continue; }
-        if(ARG_IS("--file")) 
+        if(ARG_IS("--file=")) 
         {
-            if ((fpS=fopen(*(argv+1),"r")) == NULL)
+            if ((fpS=fopen((argv[0]+7),"r")) == NULL)
             {
-                printf("# --file %s failed to open\n",*(argv+1));
+                printf("# --file%s failed to open\n",(argv[0]+6));
                 usage();
             }
-
-printf("C 3: --file %s open OK!\n",*(argv+1));  
-            argc -= 1; argv += 1;         
+printf("C 3: --file %s opened OK!\n",(argv[0]+6));
             continue;
         }        
 	}
@@ -211,10 +209,10 @@ printf("E %i: argc %i argv %s\n",ct++, argc, *argv);
     for(argc -= 2, argv += 2 ; argc >= 2; argc -= 2, argv += 2)
     { // Client connection counter will be 1 for first client
 printf("connecting to server: %s %s command line client pair: %i \n",argv[0], argv[1],clientctr);        
-        connect_to_server(argv[0], argv[1], clientctr);
         clientctr += 1;
+        connect_to_server(argv[0], argv[1], clientctr);
     }
-
+    hsd_sandbox_init(fpS);
 
 	/* Log setup stuff */
 	syslog(LOG_INFO, "Listening socket is \"%s:%s\"\n", host_name, svcs_name);
