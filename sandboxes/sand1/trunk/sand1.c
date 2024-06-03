@@ -22,7 +22,6 @@ static connect_t *ccb_base;				/* Save address of ccb[0] here */
 static int ccb_max;						/* Save number of ccbs here */
 
 static volatile connect_t *ccb_tmp;		/* Kludge to supress warnings */
-static volatile int int_tmp;			/* Kludge to supress warnings */
 
 static struct CBF_TABLES* pcbf; // Pointer to bridging structs & tables
 static char* pinbuf;

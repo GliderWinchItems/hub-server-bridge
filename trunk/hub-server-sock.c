@@ -254,7 +254,7 @@ printf("!in->is_server && !out->is_server\n");
 							{
 								if(in == out)
 								{
-printf("in == out %i socket in %i out %i\n",in->connex_num,in->socket,out->socket);
+//!printf("in == out %i socket in %i out %i\n",in->connex_num,in->socket,out->socket);
 								 continue;
 								}
 							}
