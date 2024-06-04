@@ -39,5 +39,5 @@ gcc -Wall -I. -o "hub-server-bridge-$SANDBOX" \
  -pthread \
  -I$HUBDIR -I$CANDIR \
  -L$CANDIR/PC \
- -lcommon_all
+ 
 echo "gcc DONE"
