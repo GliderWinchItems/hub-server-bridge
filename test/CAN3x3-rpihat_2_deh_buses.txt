@@ -66,13 +66,14 @@ INSERT INTO CANID VALUES ('CANID_UNIT_1A','03600000','UNIT_1A',1,1,'U8','Logger2
 INSERT INTO CANID VALUES ('CANID_HB_TIMESYNC',       '00400000','TIMESYNC',1,1,'U8'   ,'GPS_1: GPS time sync distribution msg');
 #------------------------------------------------------------------------------------
 %32 0 // pass-on-match: incoming #3 -> outgoing #2 (BMS bus -> CSA bus)
-# Empty match list: block all
+# Pass time tick msg to CSA bus
+INSERT INTO CANID VALUES ('CANID_HB_TIMESYNC',    '00400000','TIMESYNC',1,1,'U8'   ,'GPS_1: GPS time sync distribution msg');
 #------------------------------------------------------------------------------------
 %33 0 // MUST be NULL
 #------------------------------------------------------------------------------------
 %99 0 // END OF TABLE (just for a check)
 #------------------------------------------------------------------------------------
-
+#
 ## Notes:
 # 1. This scheme does not automatically update chantges of the CANID_INSERT.sql file, but
 #    as long as the CAN ID assignment does not change, changes to the .sql are OK.
@@ -84,4 +85,3 @@ INSERT INTO CANID VALUES ('CANID_HB_TIMESYNC',       '00400000','TIMESYNC',1,1,'
 #
 # 3. Table MUST be in Row Column order (with 'matrix trace' entry included, but empty)
 #
-    

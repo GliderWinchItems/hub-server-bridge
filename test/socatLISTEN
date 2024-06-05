@@ -1,0 +1,7 @@
+#!/bin/bash
+# Connect usb/serial to local port.
+# socatLISTEN <port> <device>
+# socatLISTEN 32130 /dev/ttyUSB0 [example]
+#
+socat TCP4-LISTEN:$1,nodelay,fork FILE:$2,b2000000,raw,echo=0,crtscts=0
+#
