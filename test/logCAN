@@ -1,0 +1,31 @@
+# CANlog
+# Start logging to thumb drive with date embedded in file name
+# 06/05/2024
+# logCAN /media/pi/<name> <CAN 0|1, or port>
+# CAN 0 uses port 32124 (see /etc/rc.local)
+# CAN 1 uses port 32125 (see /etc/rc.local)
+#
+# Examples:
+# sudo nohup logCAN CANLOG 0 &
+# sudo logCAN CANLOG 1
+# sudo logCAN 10A7-FCCB 32150
+date
+if [ -d /media/pi/$1 ] ; then
+	cd /media/pi/$1
+	if [ $2 = "0" ] ; then	
+		nc localhost 32124 > "CAN0_$(date '+%Y%m%d_%H%M%S')"
+	else
+
+		if [ $2 = "1" ] ; then
+			nc localhost 32125 > "CAN1_$(date '+%Y%m%d_%H%M%S')"
+		
+		else
+			echo "Not CAN0 or CAN1, assume a port number"
+			nc localhost $2 > PORT-$2_$(date '+%Y%m%d_%H%M%S')"
+			exit
+		fi
+	fi
+else
+	echo "Failed to start"
+fi
+date
