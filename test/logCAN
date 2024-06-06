@@ -21,7 +21,7 @@ if [ -d /media/pi/$1 ] ; then
 		
 		else
 			echo "Not CAN0 or CAN1, assume a port number"
-			nc localhost $2 > PORT-$2_$(date '+%Y%m%d_%H%M%S')"
+			nc localhost $2 > "PORT-$2_$(date '+%Y%m%d_%H%M%S')"
 			exit
 		fi
 	fi
