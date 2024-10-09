@@ -1,0 +1,113 @@
+# CAN4x4-rpihat_3_deh_buses.txt
+# 06/09/2024
+# RPi41-deh with CAN hat plus gateway
+# Bootup connects RPi CAN inputs
+# cat /etc/rc.local
+# hub-server 0.0.0.0 32123 &
+# hub-server 0.0.0.0 32124 &
+# hub-server 0.0.0.0 32125 &
+#
+# sudo socat TCP4:localhost:32123,nodelay FILE:/dev/ttyUSB0,b2000000,raw,echo=0,crtscts=0 &
+# sudo /usr/local/bin/can-client -s localhost -i can0 -p 32124 &
+# sudo /usr/local/bin/can-client -s localhost -i can1 -p 32125 &
+#
+# Command line to run this configuration ==>on the RPi<==--
+# cd ~/GliderWinchItems/hub-server-bridge/sandboxes/sand1/trunk
+# hub-server-bridge-sand1 --nodelay --file=../../../test/CAN4x4-rpihat_3_deh_buses.txt 0.0.0.0 32120 localhost 32125 localhost 32124 localhost 32123
+# 
+# Hub-server internal: Table: port: connection
+# Table 0: 1: 32120: Listening port (multiple connections)
+# Table 1: 2: 32125: can1: "BMS" three BMS, bmsmot, ELCON charger
+# Table 2: 3: 32124: can0: "CSA" tension uint #2, engine manifold & throttle, low volt/cap bank
+# Table 3: 4: 32123: gateway4 (E2E): POD, gps/logger
+#
+# Filter file line editing--
+# First char: ' ' = skip
+# First char: '#' = comment, skip
+# First char: '@' = matrix size (n)
+# First char: '%' = in->out table start
+#   2nd char: Input connection (0-n)
+#   3rd char: Output connection (0-n)
+#   4th char: must be ' '
+#   5th char: filter table type (0 OR 1)
+# First char: 'I' = ascii hex CAN id name copied from CANID_INSERT.sql file
+# First char: 'T' = Translate ID: CAN bus side CAN id
+# First char: 't' = Translate ID: outside of CAN bus CAN id
+#   Note: 'T' and 't' must be in consecutive pairs
+# 
+######################################
+@4 // Connection size (N=4): 4x4 table
+######################################
+#------------------------------------------------------------------------------------
+%11 0 // MUST be NULL
+#------------------------------------------------------------------------------------
+%12 0 // pass-on-match : incoming #1 -> outgoing #2 (listening port -> BMS bus)
+# Empty match list means block all.
+INSERT INTO CANID VALUES ('CANID_UNI_BMS_PC_I'  ,'AEC00000', 'BMSV1', 1,1,'U8_U8_U8_X4','BMSV1 UNIversal From PC,   Incoming msg to BMS: X4=target CANID');
+INSERT INTO CANID VALUES ('CANID_UNI_BMS_EMC_I' ,'AEE00000', 'BMSV1', 1,1,'U8_U8_U8_X4','BMSV1 UNIversal From EMC,  Incoming msg to BMS: X4=target CANID');
+#------------------------------------------------------------------------------------
+%13 0 // pass-on-match : incoming #1 -> outgoing #3 (listening port -> CSA bus)
+# Empty match list means block all.
+INSERT INTO CANID VALUES ('CANID_UNI_BMS_PC_I'  ,'AEC00000', 'BMSV1', 1,1,'U8_U8_U8_X4','BMSV1 UNIversal From PC,   Incoming msg to BMS: X4=target CANID');
+INSERT INTO CANID VALUES ('CANID_UNI_BMS_EMC_I' ,'AEE00000', 'BMSV1', 1,1,'U8_U8_U8_X4','BMSV1 UNIversal From EMC,  Incoming msg to BMS: X4=target CANID');
+#------------------------------------------------------------------------------------
+%14 0 // pass-on-match : incoming #1 -> outgoing #4 (listening port -> gps,tension bus)
+# Empty match list means block all.
+INSERT INTO CANID VALUES ('CANID_UNI_BMS_PC_I'  ,'AEC00000', 'BMSV1', 1,1,'U8_U8_U8_X4','BMSV1 UNIversal From PC,   Incoming msg to BMS: X4=target CANID');
+INSERT INTO CANID VALUES ('CANID_UNI_BMS_EMC_I' ,'AEE00000', 'BMSV1', 1,1,'U8_U8_U8_X4','BMSV1 UNIversal From EMC,  Incoming msg to BMS: X4=target CANID');
+#------------------------------------------------------------------------------------
+%21 1 // block-on-match : incoming #2 -> outgoing #1 (BMS bus -> listening port)
+# Empty match list means pass all
+#------------------------------------------------------------------------------------
+%22 0 // MUST be NULL
+#------------------------------------------------------------------------------------
+%23 0 // pass-on-match : incoming #2 -> outgoing #3 (BMS bus -> CSA bus)
+# Empty match list means block all.
+#------------------------------------------------------------------------------------
+%24 0 // pass-on-match : incoming #2 -> outgoing #4 (BMS bus -> gps,tension bus)
+# Empty match list means block all.
+#------------------------------------------------------------------------------------
+%31 1 // block: incoming #3 -> outgoing #1 (BMS bus -> listening port)
+# Pass all to listening port (for things such as cangate, logging, etc.)
+INSERT INTO CANID VALUES ('CANID_HB_TIMESYNC',       '00400000','TIMESYNC',1,1,'U8'   ,'GPS_1: GPS time sync distribution msg');
+#------------------------------------------------------------------------------------
+%32 0 // pass-on-match: incoming #3 -> outgoing #2 (CSA bus -> BMS bus)
+# Pass time tick msg to CSA bus
+INSERT INTO CANID VALUES ('CANID_HB_TIMESYNC',    '00400000','TIMESYNC',1,1,'U8'   ,'GPS_1: GPS time sync distribution msg');
+#------------------------------------------------------------------------------------
+%33 0 // MUST be NULL
+#------------------------------------------------------------------------------------
+%34 0 // pass-on-match: incoming #3 -> outgoing #2 (BMS bus -> CSA bus)
+# Empty match list means block all.
+#------------------------------------------------------------------------------------
+%41 1 // block: incoming #4 -> outgoing #1 (gps,tension bus -> listening port)
+# Empty match list means block all.
+INSERT INTO CANID VALUES ('CANID_HB_TIMESYNC',      '00400000', 'TIMESYNC',1,1,'U8'   ,'GPS_1: GPS time sync distribution msg');
+INSERT INTO CANID VALUES ('CANID_MSG_TENSION_a12',	'38400000', 'TENSION_a',4,0, 'U8_FF','Tension_a21: Drum 2 calibrated tension, polled by time msg');
+INSERT INTO CANID VALUES ('CANID_MSG_TENSION_a22',	'38600000', 'TENSION_a',5,0, 'U8_FF','Tension_a22: Drum 2 calibrated tension, polled by time msg');
+INSERT INTO CANID VALUES ('CANID_HB_GPS_LLH_2',     'E2600000', 'GPS',2,7, 'LAT_LON_HT','GPS_2: Heartbeat (3 separate msgs) lattitude longitude height');
+#------------------------------------------------------------------------------------
+%42 0 // pass-on-match: incoming #4 -> outgoing #2 (gps,tension bus -> BMS bus)
+# Pass time tick msg to CSA bus
+INSERT INTO CANID VALUES ('CANID_HB_TIMESYNC',    '00400000','TIMESYNC',1,1,'U8'   ,'GPS_1: GPS time sync distribution msg');
+#------------------------------------------------------------------------------------
+%43 0 // pass-on-match: incoming #4 -> outgoing #3 (gps,tension bus -> CSA bus)
+# Pass time tick msg to CSA bus
+INSERT INTO CANID VALUES ('CANID_HB_TIMESYNC',    '00400000','TIMESYNC',1,1,'U8'   ,'GPS_1: GPS time sync distribution msg');
+#------------------------------------------------------------------------------------
+%44 0 // MUST be NULL
+#------------------------------------------------------------------------------------
+%99 0 // END OF TABLE (just for a check)
+#------------------------------------------------------------------------------------
+#
+## Notes:
+# 1. This scheme does not automatically update changes of the CANID_INSERT.sql file, but
+#    as long as the CAN ID assignment does not change, changes to the .sql are OK.
+#
+# 2. For the STM32 emc-master bridging the contemplated process would be:
+#    - Separate program runs the code for read:edit:load (same for all usages)
+#    - Additionally, converts binary loaded tables to 'C' code which is included in the compilation.
+#      (Since there is not file reading capability for the STM32)
+#
+# 3. Table MUST be in Row Column order (with 'matrix trace' entry included, but empty)
+#
